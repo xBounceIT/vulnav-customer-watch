@@ -38,6 +38,7 @@ export const EmailSettings = ({
   onTestEmailRecipientChange 
 }: EmailSettingsProps) => {
   const { toast } = useToast();
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
 
   const handleSaveSettings = () => {
     console.log("Saving email settings:", { authMethod, settings });
@@ -57,25 +58,93 @@ export const EmailSettings = ({
       return;
     }
 
-    console.log("Sending test email to:", testEmailRecipient);
-    console.log("Using auth method:", authMethod);
+    console.log("Starting email test...");
+    console.log("Test email recipient:", testEmailRecipient);
+    console.log("Auth method:", authMethod);
     console.log("Email settings:", settings);
     
+    setIsTestingEmail(true);
+
     try {
-      // Simulate sending test email - in real app, this would make an API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Validate required fields based on auth method
+      if (authMethod === 'smtp') {
+        if (!settings.smtpHost || !settings.smtpPort || !settings.smtpUser || !settings.smtpPassword) {
+          throw new Error("Missing required SMTP settings");
+        }
+      } else if (authMethod === 'oauth2') {
+        if (!settings.clientId || !settings.clientSecret) {
+          throw new Error("Missing required OAuth2 settings");
+        }
+        if (settings.provider === 'microsoft' && !settings.tenantId) {
+          throw new Error("Missing Microsoft Tenant ID");
+        }
+      }
+
+      if (!settings.fromEmail) {
+        throw new Error("Missing 'From Email' address");
+      }
+
+      // Log the email configuration being used
+      console.log("Email configuration:", {
+        authMethod,
+        host: settings.smtpHost,
+        port: settings.smtpPort,
+        protocol: settings.smtpProtocol,
+        user: settings.smtpUser,
+        fromEmail: settings.fromEmail,
+        fromName: settings.fromName,
+        provider: settings.provider,
+        recipient: testEmailRecipient
+      });
+
+      // In a real application, this would make an API call to your backend
+      // For now, we'll simulate the email sending process
+      console.log("Simulating email send...");
+      
+      // Create a realistic email payload
+      const emailPayload = {
+        to: testEmailRecipient,
+        from: `${settings.fromName} <${settings.fromEmail}>`,
+        subject: "CVEAdvisor Test Email",
+        body: `This is a test email from CVEAdvisor using ${authMethod === 'smtp' ? 'SMTP' : 'OAuth2'} authentication.`,
+        authMethod,
+        settings: authMethod === 'smtp' ? {
+          host: settings.smtpHost,
+          port: parseInt(settings.smtpPort),
+          protocol: settings.smtpProtocol,
+          user: settings.smtpUser,
+          password: settings.smtpPassword
+        } : {
+          provider: settings.provider,
+          clientId: settings.clientId,
+          clientSecret: settings.clientSecret,
+          tenantId: settings.tenantId
+        }
+      };
+
+      console.log("Email payload:", emailPayload);
+
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // For demo purposes, we'll show success
+      // In production, replace this with actual email sending logic
+      console.log("Test email sent successfully!");
       
       toast({
         title: "Test Email Sent",
         description: `A test email has been sent to ${testEmailRecipient} using ${authMethod === 'smtp' ? 'SMTP' : 'OAuth2'} authentication.`,
       });
+
     } catch (error) {
       console.error("Failed to send test email:", error);
       toast({
         title: "Error",
-        description: "Failed to send test email. Please check your settings.",
+        description: error instanceof Error ? error.message : "Failed to send test email. Please check your settings.",
         variant: "destructive",
       });
+    } finally {
+      setIsTestingEmail(false);
     }
   };
 
@@ -122,14 +191,33 @@ export const EmailSettings = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {authMethod === "smtp" ? (
             <>
-              <div>
-                <Label htmlFor="smtp-host">SMTP Host</Label>
-                <Input
-                  id="smtp-host"
-                  value={settings.smtpHost}
-                  onChange={(e) => onSettingsChange({...settings, smtpHost: e.target.value})}
-                  placeholder="smtp.gmail.com"
-                />
+              <div className="md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="smtp-host">SMTP Host</Label>
+                    <Input
+                      id="smtp-host"
+                      value={settings.smtpHost}
+                      onChange={(e) => onSettingsChange({...settings, smtpHost: e.target.value})}
+                      placeholder="smtp.gmail.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="smtp-protocol">Protocol</Label>
+                    <Select 
+                      value={settings.smtpProtocol} 
+                      onValueChange={(value) => onSettingsChange({...settings, smtpProtocol: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Protocol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="TLS">TLS</SelectItem>
+                        <SelectItem value="SSL">SSL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               <div>
                 <Label htmlFor="smtp-port">SMTP Port</Label>
@@ -139,21 +227,6 @@ export const EmailSettings = ({
                   onChange={(e) => onSettingsChange({...settings, smtpPort: e.target.value})}
                   placeholder="587"
                 />
-              </div>
-              <div>
-                <Label htmlFor="smtp-protocol">Protocol</Label>
-                <Select 
-                  value={settings.smtpProtocol} 
-                  onValueChange={(value) => onSettingsChange({...settings, smtpProtocol: value})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select protocol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="TLS">TLS</SelectItem>
-                    <SelectItem value="SSL">SSL</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
               <div>
                 <Label htmlFor="smtp-user">SMTP Username</Label>
@@ -246,8 +319,12 @@ export const EmailSettings = ({
           <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700">
             Save Email Settings
           </Button>
-          <Button onClick={handleTestEmail} variant="outline">
-            Send Test Email
+          <Button 
+            onClick={handleTestEmail} 
+            variant="outline"
+            disabled={isTestingEmail}
+          >
+            {isTestingEmail ? 'Sending...' : 'Send Test Email'}
           </Button>
         </div>
       </CardContent>
