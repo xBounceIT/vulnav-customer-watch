@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Key, Mail, Server, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +17,8 @@ const Admin = () => {
     syncInterval: "6",
   });
 
+  const [emailAuthMethod, setEmailAuthMethod] = useState("smtp");
+
   const [emailSettings, setEmailSettings] = useState({
     smtpHost: "",
     smtpPort: "587",
@@ -24,6 +26,11 @@ const Admin = () => {
     smtpPassword: "",
     fromEmail: "",
     fromName: "CVEAdvisor",
+    // OAuth2 settings
+    clientId: "",
+    clientSecret: "",
+    tenantId: "", // For Microsoft
+    provider: "google", // google or microsoft
   });
 
   const [emailTemplate, setEmailTemplate] = useState({
@@ -44,8 +51,10 @@ Best regards,
 CVEAdvisor Security Team`,
   });
 
+  const [testEmailRecipient, setTestEmailRecipient] = useState("");
+
   const handleSaveNvdSettings = () => {
-    // In a real app, this would save to the database
+    console.log("Saving NVD settings:", nvdSettings);
     toast({
       title: "Settings Saved",
       description: "NVD API settings have been updated successfully.",
@@ -53,7 +62,7 @@ CVEAdvisor Security Team`,
   };
 
   const handleSaveEmailSettings = () => {
-    // In a real app, this would save to the database
+    console.log("Saving email settings:", { emailAuthMethod, emailSettings });
     toast({
       title: "Settings Saved", 
       description: "Email settings have been updated successfully.",
@@ -61,7 +70,7 @@ CVEAdvisor Security Team`,
   };
 
   const handleSaveEmailTemplate = () => {
-    // In a real app, this would save to the database
+    console.log("Saving email template:", emailTemplate);
     toast({
       title: "Template Saved",
       description: "Email template has been updated successfully.",
@@ -69,10 +78,23 @@ CVEAdvisor Security Team`,
   };
 
   const handleTestEmail = () => {
+    if (!testEmailRecipient) {
+      toast({
+        title: "Error",
+        description: "Please enter a recipient email address for the test.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log("Sending test email to:", testEmailRecipient);
+    console.log("Using auth method:", emailAuthMethod);
+    console.log("Email settings:", emailSettings);
+    
     // In a real app, this would send a test email
     toast({
       title: "Test Email Sent",
-      description: "A test email has been sent using current settings.",
+      description: `A test email has been sent to ${testEmailRecipient} using ${emailAuthMethod === 'smtp' ? 'SMTP' : 'OAuth2'} authentication.`,
     });
   };
 
@@ -133,44 +155,112 @@ CVEAdvisor Security Team`,
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="auth-method">Authentication Method</Label>
+            <Select value={emailAuthMethod} onValueChange={setEmailAuthMethod}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select authentication method" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="smtp">SMTP with Password</SelectItem>
+                <SelectItem value="oauth2">OAuth2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {emailAuthMethod === "oauth2" && (
+            <div>
+              <Label htmlFor="oauth-provider">OAuth2 Provider</Label>
+              <Select 
+                value={emailSettings.provider} 
+                onValueChange={(value) => setEmailSettings({...emailSettings, provider: value as "google" | "microsoft"})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select OAuth2 provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="google">Google</SelectItem>
+                  <SelectItem value="microsoft">Microsoft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="smtp-host">SMTP Host</Label>
-              <Input
-                id="smtp-host"
-                value={emailSettings.smtpHost}
-                onChange={(e) => setEmailSettings({...emailSettings, smtpHost: e.target.value})}
-                placeholder="smtp.gmail.com"
-              />
-            </div>
-            <div>
-              <Label htmlFor="smtp-port">SMTP Port</Label>
-              <Input
-                id="smtp-port"
-                value={emailSettings.smtpPort}
-                onChange={(e) => setEmailSettings({...emailSettings, smtpPort: e.target.value})}
-                placeholder="587"
-              />
-            </div>
-            <div>
-              <Label htmlFor="smtp-user">SMTP Username</Label>
-              <Input
-                id="smtp-user"
-                value={emailSettings.smtpUser}
-                onChange={(e) => setEmailSettings({...emailSettings, smtpUser: e.target.value})}
-                placeholder="your-email@company.com"
-              />
-            </div>
-            <div>
-              <Label htmlFor="smtp-password">SMTP Password</Label>
-              <Input
-                id="smtp-password"
-                type="password"
-                value={emailSettings.smtpPassword}
-                onChange={(e) => setEmailSettings({...emailSettings, smtpPassword: e.target.value})}
-                placeholder="Your email password"
-              />
-            </div>
+            {emailAuthMethod === "smtp" ? (
+              <>
+                <div>
+                  <Label htmlFor="smtp-host">SMTP Host</Label>
+                  <Input
+                    id="smtp-host"
+                    value={emailSettings.smtpHost}
+                    onChange={(e) => setEmailSettings({...emailSettings, smtpHost: e.target.value})}
+                    placeholder="smtp.gmail.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="smtp-port">SMTP Port</Label>
+                  <Input
+                    id="smtp-port"
+                    value={emailSettings.smtpPort}
+                    onChange={(e) => setEmailSettings({...emailSettings, smtpPort: e.target.value})}
+                    placeholder="587"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="smtp-user">SMTP Username</Label>
+                  <Input
+                    id="smtp-user"
+                    value={emailSettings.smtpUser}
+                    onChange={(e) => setEmailSettings({...emailSettings, smtpUser: e.target.value})}
+                    placeholder="your-email@company.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="smtp-password">SMTP Password</Label>
+                  <Input
+                    id="smtp-password"
+                    type="password"
+                    value={emailSettings.smtpPassword}
+                    onChange={(e) => setEmailSettings({...emailSettings, smtpPassword: e.target.value})}
+                    placeholder="Your email password"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label htmlFor="client-id">Client ID</Label>
+                  <Input
+                    id="client-id"
+                    value={emailSettings.clientId}
+                    onChange={(e) => setEmailSettings({...emailSettings, clientId: e.target.value})}
+                    placeholder="OAuth2 Client ID"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="client-secret">Client Secret</Label>
+                  <Input
+                    id="client-secret"
+                    type="password"
+                    value={emailSettings.clientSecret}
+                    onChange={(e) => setEmailSettings({...emailSettings, clientSecret: e.target.value})}
+                    placeholder="OAuth2 Client Secret"
+                  />
+                </div>
+                {emailSettings.provider === "microsoft" && (
+                  <div>
+                    <Label htmlFor="tenant-id">Tenant ID</Label>
+                    <Input
+                      id="tenant-id"
+                      value={emailSettings.tenantId}
+                      onChange={(e) => setEmailSettings({...emailSettings, tenantId: e.target.value})}
+                      placeholder="Microsoft Tenant ID"
+                    />
+                  </div>
+                )}
+              </>
+            )}
             <div>
               <Label htmlFor="from-email">From Email</Label>
               <Input
@@ -191,6 +281,19 @@ CVEAdvisor Security Team`,
               />
             </div>
           </div>
+
+          <div>
+            <Label htmlFor="test-email-recipient">Test Email Recipient</Label>
+            <Input
+              id="test-email-recipient"
+              type="email"
+              value={testEmailRecipient}
+              onChange={(e) => setTestEmailRecipient(e.target.value)}
+              placeholder="test@example.com"
+            />
+            <p className="text-xs text-gray-500 mt-1">Enter email address to receive test emails</p>
+          </div>
+
           <div className="flex gap-2">
             <Button onClick={handleSaveEmailSettings} className="bg-blue-600 hover:bg-blue-700">
               Save Email Settings
