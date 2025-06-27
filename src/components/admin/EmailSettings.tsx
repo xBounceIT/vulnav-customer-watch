@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EmailSettingsProps {
   authMethod: string;
@@ -38,6 +38,7 @@ export const EmailSettings = ({
   onTestEmailRecipientChange 
 }: EmailSettingsProps) => {
   const { toast } = useToast();
+  const [isSendingTest, setIsSendingTest] = useState(false);
 
   const handleSaveSettings = () => {
     console.log("Saving email settings:", { authMethod, settings });
@@ -57,25 +58,80 @@ export const EmailSettings = ({
       return;
     }
 
+    // Validate SMTP settings for test
+    if (authMethod === 'smtp') {
+      if (!settings.smtpHost || !settings.smtpUser || !settings.smtpPassword || !settings.fromEmail) {
+        toast({
+          title: "Error",
+          description: "Please fill in all SMTP settings before testing.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    setIsSendingTest(true);
     console.log("Sending test email to:", testEmailRecipient);
     console.log("Using auth method:", authMethod);
     console.log("Email settings:", settings);
     
     try {
-      // Simulate sending test email - in real app, this would make an API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Test Email Sent",
-        description: `A test email has been sent to ${testEmailRecipient} using ${authMethod === 'smtp' ? 'SMTP' : 'OAuth2'} authentication.`,
+      const testEmailData = {
+        to: testEmailRecipient,
+        from: settings.fromEmail || 'test@cveadvisor.com',
+        fromName: settings.fromName || 'CVEAdvisor',
+        subject: 'CVEAdvisor Test Email',
+        html: `
+          <h1>Test Email from CVEAdvisor</h1>
+          <p>This is a test email to verify your email configuration is working correctly.</p>
+          <p><strong>Configuration used:</strong></p>
+          <ul>
+            <li>Auth Method: ${authMethod}</li>
+            <li>SMTP Host: ${settings.smtpHost}</li>
+            <li>SMTP Port: ${settings.smtpPort}</li>
+            <li>From Email: ${settings.fromEmail}</li>
+          </ul>
+          <p>If you received this email, your configuration is working!</p>
+          <p>Best regards,<br>CVEAdvisor Team</p>
+        `,
+        smtpHost: settings.smtpHost,
+        smtpPort: parseInt(settings.smtpPort) || 587,
+        smtpUser: settings.smtpUser,
+        smtpPassword: settings.smtpPassword,
+        smtpProtocol: settings.smtpProtocol,
+        isTest: true
+      };
+
+      console.log('Calling send-email function with:', testEmailData);
+
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: testEmailData
       });
+
+      if (error) {
+        console.error("Email function error:", error);
+        throw error;
+      }
+
+      console.log("Email function response:", data);
+
+      if (data?.success) {
+        toast({
+          title: "Test Email Sent",
+          description: `A test email has been sent to ${testEmailRecipient}. Please check your inbox and spam folder.`,
+        });
+      } else {
+        throw new Error(data?.error || 'Unknown error occurred');
+      }
     } catch (error) {
       console.error("Failed to send test email:", error);
       toast({
         title: "Error",
-        description: "Failed to send test email. Please check your settings.",
+        description: `Failed to send test email: ${error.message}. Please check your settings and try again.`,
         variant: "destructive",
       });
+    } finally {
+      setIsSendingTest(false);
     }
   };
 
@@ -123,21 +179,23 @@ export const EmailSettings = ({
           {authMethod === "smtp" ? (
             <>
               <div>
-                <Label htmlFor="smtp-host">SMTP Host</Label>
+                <Label htmlFor="smtp-host">SMTP Host *</Label>
                 <Input
                   id="smtp-host"
                   value={settings.smtpHost}
                   onChange={(e) => onSettingsChange({...settings, smtpHost: e.target.value})}
                   placeholder="smtp.gmail.com"
+                  required
                 />
               </div>
               <div>
-                <Label htmlFor="smtp-port">SMTP Port</Label>
+                <Label htmlFor="smtp-port">SMTP Port *</Label>
                 <Input
                   id="smtp-port"
                   value={settings.smtpPort}
                   onChange={(e) => onSettingsChange({...settings, smtpPort: e.target.value})}
                   placeholder="587"
+                  required
                 />
               </div>
               <div>
@@ -156,23 +214,28 @@ export const EmailSettings = ({
                 </Select>
               </div>
               <div>
-                <Label htmlFor="smtp-user">SMTP Username</Label>
+                <Label htmlFor="smtp-user">SMTP Username *</Label>
                 <Input
                   id="smtp-user"
                   value={settings.smtpUser}
                   onChange={(e) => onSettingsChange({...settings, smtpUser: e.target.value})}
                   placeholder="your-email@company.com"
+                  required
                 />
               </div>
               <div>
-                <Label htmlFor="smtp-password">SMTP Password</Label>
+                <Label htmlFor="smtp-password">SMTP Password *</Label>
                 <Input
                   id="smtp-password"
                   type="password"
                   value={settings.smtpPassword}
                   onChange={(e) => onSettingsChange({...settings, smtpPassword: e.target.value})}
-                  placeholder="Your email password"
+                  placeholder="Your email password or app password"
+                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  For Gmail, use an App Password instead of your regular password
+                </p>
               </div>
             </>
           ) : (
@@ -210,13 +273,14 @@ export const EmailSettings = ({
             </>
           )}
           <div>
-            <Label htmlFor="from-email">From Email</Label>
+            <Label htmlFor="from-email">From Email *</Label>
             <Input
               id="from-email"
               type="email"
               value={settings.fromEmail}
               onChange={(e) => onSettingsChange({...settings, fromEmail: e.target.value})}
               placeholder="alerts@company.com"
+              required
             />
           </div>
           <div>
@@ -231,13 +295,14 @@ export const EmailSettings = ({
         </div>
 
         <div>
-          <Label htmlFor="test-email-recipient">Test Email Recipient</Label>
+          <Label htmlFor="test-email-recipient">Test Email Recipient *</Label>
           <Input
             id="test-email-recipient"
             type="email"
             value={testEmailRecipient}
             onChange={(e) => onTestEmailRecipientChange(e.target.value)}
             placeholder="test@example.com"
+            required
           />
           <p className="text-xs text-gray-500 mt-1">Enter email address to receive test emails</p>
         </div>
@@ -246,10 +311,26 @@ export const EmailSettings = ({
           <Button onClick={handleSaveSettings} className="bg-blue-600 hover:bg-blue-700">
             Save Email Settings
           </Button>
-          <Button onClick={handleTestEmail} variant="outline">
-            Send Test Email
+          <Button 
+            onClick={handleTestEmail} 
+            variant="outline"
+            disabled={isSendingTest}
+          >
+            {isSendingTest ? 'Sending...' : 'Send Test Email'}
           </Button>
         </div>
+
+        {authMethod === 'smtp' && (
+          <div className="bg-blue-50 p-3 rounded-lg text-sm">
+            <p className="font-medium text-blue-900 mb-1">SMTP Setup Notes:</p>
+            <ul className="text-blue-800 space-y-1 text-xs">
+              <li>• For Gmail: Use smtp.gmail.com, port 587, and create an App Password</li>
+              <li>• For Outlook: Use smtp-mail.outlook.com, port 587</li>
+              <li>• Ensure "Less secure app access" is enabled if required</li>
+              <li>• Check spam folder if test emails don't arrive</li>
+            </ul>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

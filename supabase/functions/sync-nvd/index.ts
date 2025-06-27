@@ -58,23 +58,29 @@ Deno.serve(async (req) => {
       throw new Error('NVD API key is required');
     }
 
-    // Fetch recent vulnerabilities from NVD API
+    // Fetch recent vulnerabilities from NVD API with correct date format
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const nvdUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0/?pubStartDate=${thirtyDaysAgo.toISOString().split('T')[0]}T00:00:00.000&resultsPerPage=100`;
+    // Format date as YYYY-MM-DDTHH:MM:SS.sss (ISO format without timezone)
+    const startDate = thirtyDaysAgo.toISOString();
+    
+    const nvdUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0/?pubStartDate=${startDate}&resultsPerPage=100`;
     
     console.log('Fetching from NVD:', nvdUrl);
     
     const nvdResponse = await fetch(nvdUrl, {
       headers: {
         'apiKey': nvdApiKey,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'CVEAdvisor/1.0'
       }
     });
 
     if (!nvdResponse.ok) {
-      throw new Error(`NVD API error: ${nvdResponse.status} ${nvdResponse.statusText}`);
+      const errorText = await nvdResponse.text();
+      console.error('NVD API Response:', errorText);
+      throw new Error(`NVD API error: ${nvdResponse.status} ${nvdResponse.statusText} - ${errorText}`);
     }
 
     const nvdData = await nvdResponse.json();
@@ -142,6 +148,7 @@ Deno.serve(async (req) => {
           } else {
             newVulnerabilities.push({ cveId, vendor, product, severity, cvssScore, description });
             processedCount++;
+            console.log(`Added new vulnerability: ${cveId}`);
           }
         }
       } catch (error) {
@@ -178,6 +185,8 @@ Deno.serve(async (req) => {
 
 async function sendEmailNotifications(supabase: any, vulnerabilities: any[], emailSettings: any, emailTemplate: any) {
   try {
+    console.log('Starting email notifications...');
+    
     // Get customers with monitored products
     const { data: customers } = await supabase
       .from('customers')
@@ -191,6 +200,8 @@ async function sendEmailNotifications(supabase: any, vulnerabilities: any[], ema
         )
       `);
 
+    console.log(`Found ${customers?.length || 0} customers`);
+
     for (const customer of customers || []) {
       const relevantVulns = vulnerabilities.filter(vuln => 
         customer.monitored_products.some((product: any) => 
@@ -200,6 +211,8 @@ async function sendEmailNotifications(supabase: any, vulnerabilities: any[], ema
       );
 
       if (relevantVulns.length > 0) {
+        console.log(`Found ${relevantVulns.length} relevant vulnerabilities for ${customer.email}`);
+        
         for (const vuln of relevantVulns) {
           // Check if we already sent notification for this vulnerability to this customer
           const { data: existingNotification } = await supabase
@@ -230,6 +243,8 @@ async function sendEmailNotifications(supabase: any, vulnerabilities: any[], ema
 
 async function sendEmail(customer: any, vulnerability: any, emailSettings: any, emailTemplate: any) {
   try {
+    console.log(`Attempting to send email to ${customer.email} for ${vulnerability.cveId}`);
+    
     // Replace template variables
     const subject = emailTemplate.subject
       .replace('$CUSTOMER', customer.company_name)
@@ -245,15 +260,40 @@ async function sendEmail(customer: any, vulnerability: any, emailSettings: any, 
       .replace('$CVSS_SCORE', vulnerability.cvssScore?.toString() || 'N/A');
 
     if (emailSettings.authMethod === 'smtp') {
-      // Use SMTP (simplified - in production you'd use a proper SMTP library)
-      console.log(`Would send SMTP email to ${customer.email}: ${subject}`);
+      // Use SMTP to send email
+      console.log('Sending SMTP email...');
+      
+      const emailPayload = {
+        to: customer.email,
+        from: emailSettings.fromEmail || 'alerts@cveadvisor.com',
+        fromName: emailSettings.fromName || 'CVEAdvisor',
+        subject: subject,
+        html: body.replace(/\n/g, '<br>'),
+        smtpHost: emailSettings.smtpHost,
+        smtpPort: parseInt(emailSettings.smtpPort) || 587,
+        smtpUser: emailSettings.smtpUser,
+        smtpPassword: emailSettings.smtpPassword,
+        smtpProtocol: emailSettings.smtpProtocol || 'TLS'
+      };
+
+      // Call the send-email edge function
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-email', {
+        body: emailPayload
+      });
+
+      if (emailError) {
+        console.error('Email sending failed:', emailError);
+        throw emailError;
+      }
+
+      console.log('Email sent successfully:', emailResult);
     } else {
-      // Use OAuth (simplified - in production you'd implement proper OAuth flow)
+      // OAuth2 method - for now just log (would need proper OAuth implementation)
       console.log(`Would send OAuth email to ${customer.email}: ${subject}`);
     }
 
-    console.log(`Email notification sent to ${customer.email} for ${vulnerability.cveId}`);
   } catch (error) {
     console.error('Error sending individual email:', error);
+    throw error;
   }
 }
