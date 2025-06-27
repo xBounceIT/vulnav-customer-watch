@@ -326,7 +326,7 @@ export const EmailSettings = ({
             <ul className="text-blue-800 space-y-1 text-xs">
               <li>• For Gmail: Use smtp.gmail.com, port 587, and create an App Password</li>
               <li>• For Outlook: Use smtp-mail.outlook.com, port 587</li>
-              <li>• Ensure "Less secure app access" is enabled if required</li>
+              <li>• Per Gmail usa un’App Password oppure configura OAuth2 (l’opzione "Less secure app access" non è più disponibile)</li>
               <li>• Check spam folder if test emails don't arrive</li>
             </ul>
           </div>
