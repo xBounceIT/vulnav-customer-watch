@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Search, AlertTriangle, Calendar, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, AlertTriangle, Calendar, ExternalLink, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,73 +13,76 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock vulnerability data
-const mockVulnerabilities = [
-  {
-    id: "CVE-2024-1234",
-    description: "Buffer overflow vulnerability in OpenSSL affecting versions 1.1.1 through 3.0.2",
-    severity: "Critical",
-    score: 9.8,
-    vendor: "OpenSSL",
-    product: "OpenSSL",
-    publishedDate: "2024-01-15",
-    lastModified: "2024-01-20"
-  },
-  {
-    id: "CVE-2024-5678",
-    description: "Remote code execution in Apache HTTP Server",
-    severity: "High",
-    score: 8.1,
-    vendor: "Apache",
-    product: "HTTP Server",
-    publishedDate: "2024-02-10",
-    lastModified: "2024-02-12"
-  },
-  {
-    id: "CVE-2024-9101",
-    description: "Cross-site scripting vulnerability in WordPress core",
-    severity: "Medium",
-    score: 6.1,
-    vendor: "WordPress",
-    product: "WordPress",
-    publishedDate: "2024-03-05",
-    lastModified: "2024-03-08"
-  },
-  {
-    id: "CVE-2024-1122",
-    description: "Privilege escalation in Microsoft Windows Kernel",
-    severity: "High",
-    score: 7.8,
-    vendor: "Microsoft",
-    product: "Windows",
-    publishedDate: "2024-01-28",
-    lastModified: "2024-02-01"
-  },
-  {
-    id: "CVE-2024-3344",
-    description: "SQL injection vulnerability in MySQL Server",
-    severity: "Medium",
-    score: 5.4,
-    vendor: "Oracle",
-    product: "MySQL",
-    publishedDate: "2024-02-20",
-    lastModified: "2024-02-22"
-  }
-];
+interface Vulnerability {
+  id: string;
+  cve_id: string;
+  description: string;
+  severity: string;
+  cvss_score: number;
+  vendor: string;
+  product: string;
+  published_date: string;
+  last_modified: string;
+}
 
 const Vulnerabilities = () => {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredVulnerabilities, setFilteredVulnerabilities] = useState(mockVulnerabilities);
+  const [vulnerabilities, setVulnerabilities] = useState<Vulnerability[]>([]);
+  const [filteredVulnerabilities, setFilteredVulnerabilities] = useState<Vulnerability[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
+  // Fetch vulnerabilities from database
+  const fetchVulnerabilities = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vulnerabilities')
+        .select('*')
+        .order('published_date', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Error fetching vulnerabilities:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch vulnerabilities from database",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setVulnerabilities(data || []);
+      setFilteredVulnerabilities(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load vulnerabilities",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchVulnerabilities();
+  }, []);
+
+  // Handle search
   const handleSearch = () => {
     if (!searchTerm.trim()) {
-      setFilteredVulnerabilities(mockVulnerabilities);
+      setFilteredVulnerabilities(vulnerabilities);
       return;
     }
 
-    const filtered = mockVulnerabilities.filter(vuln =>
-      vuln.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const filtered = vulnerabilities.filter(vuln =>
+      vuln.cve_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vuln.product.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vuln.vendor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vuln.description.toLowerCase().includes(searchTerm.toLowerCase())
@@ -92,6 +95,16 @@ const Vulnerabilities = () => {
     if (e.key === 'Enter') {
       handleSearch();
     }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchVulnerabilities();
+    setRefreshing(false);
+    toast({
+      title: "Refreshed",
+      description: "Vulnerability data has been refreshed",
+    });
   };
 
   const getSeverityColor = (severity: string) => {
@@ -108,6 +121,20 @@ const Vulnerabilities = () => {
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <AlertTriangle className="h-8 w-8 text-red-600" />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Vulnerabilities</h1>
+            <p className="text-gray-600">Loading vulnerability data...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
@@ -141,6 +168,15 @@ const Vulnerabilities = () => {
               <Search className="h-4 w-4 mr-2" />
               Search
             </Button>
+            <Button 
+              onClick={handleRefresh} 
+              variant="outline"
+              disabled={refreshing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -171,7 +207,7 @@ const Vulnerabilities = () => {
                 {filteredVulnerabilities.map((vuln) => (
                   <TableRow key={vuln.id} className="hover:bg-gray-50">
                     <TableCell className="font-mono text-sm font-medium">
-                      {vuln.id}
+                      {vuln.cve_id}
                     </TableCell>
                     <TableCell>
                       <Badge className={getSeverityColor(vuln.severity)}>
@@ -179,14 +215,14 @@ const Vulnerabilities = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="font-medium">
-                      {vuln.score}
+                      {vuln.cvss_score || 'N/A'}
                     </TableCell>
                     <TableCell>{vuln.vendor}</TableCell>
                     <TableCell>{vuln.product}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm text-gray-600">
                         <Calendar className="h-3 w-3" />
-                        {vuln.publishedDate}
+                        {vuln.published_date}
                       </div>
                     </TableCell>
                     <TableCell className="max-w-xs">
@@ -199,7 +235,7 @@ const Vulnerabilities = () => {
                         variant="outline"
                         size="sm"
                         className="h-8 text-xs"
-                        onClick={() => window.open(`https://nvd.nist.gov/vuln/detail/${vuln.id}`, '_blank')}
+                        onClick={() => window.open(`https://nvd.nist.gov/vuln/detail/${vuln.cve_id}`, '_blank')}
                       >
                         <ExternalLink className="h-3 w-3 mr-1" />
                         Details

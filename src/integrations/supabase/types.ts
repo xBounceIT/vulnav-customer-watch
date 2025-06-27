@@ -9,7 +9,137 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          company_name: string
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      monitored_products: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          id: string
+          product_name: string
+          vendor_name: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          product_name: string
+          vendor_name: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          product_name?: string
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monitored_products_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vulnerabilities: {
+        Row: {
+          created_at: string
+          cve_id: string
+          cvss_score: number | null
+          description: string | null
+          id: string
+          last_modified: string | null
+          product: string | null
+          published_date: string | null
+          severity: string | null
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          created_at?: string
+          cve_id: string
+          cvss_score?: number | null
+          description?: string | null
+          id?: string
+          last_modified?: string | null
+          product?: string | null
+          published_date?: string | null
+          severity?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          created_at?: string
+          cve_id?: string
+          cvss_score?: number | null
+          description?: string | null
+          id?: string
+          last_modified?: string | null
+          product?: string | null
+          published_date?: string | null
+          severity?: string | null
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: []
+      }
+      vulnerability_notifications: {
+        Row: {
+          customer_id: string | null
+          id: string
+          sent_at: string
+          vulnerability_id: string | null
+        }
+        Insert: {
+          customer_id?: string | null
+          id?: string
+          sent_at?: string
+          vulnerability_id?: string | null
+        }
+        Update: {
+          customer_id?: string | null
+          id?: string
+          sent_at?: string
+          vulnerability_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vulnerability_notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vulnerability_notifications_vulnerability_id_fkey"
+            columns: ["vulnerability_id"]
+            isOneToOne: false
+            referencedRelation: "vulnerabilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

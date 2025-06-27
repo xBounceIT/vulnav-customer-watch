@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Key, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NvdSettingsProps {
   settings: {
@@ -29,22 +30,70 @@ export const NvdSettings = ({ settings, onSettingsChange }: NvdSettingsProps) =>
   };
 
   const handleSyncNow = async () => {
+    if (!settings.apiKey) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your NVD API key before syncing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSyncing(true);
     console.log("Starting manual NVD sync...");
     
     try {
-      // Simulate API call - in real app, this would make an actual API request
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      // Get email settings from parent component (Admin page)
+      // In a real implementation, you'd pass these as props or get from context
+      const emailSettings = {
+        authMethod: 'smtp',
+        smtpHost: '',
+        smtpPort: '587',
+        smtpUser: '',
+        smtpPassword: '',
+        fromEmail: '',
+        fromName: 'CVEAdvisor'
+      };
+
+      const emailTemplate = {
+        subject: 'Security Alert: New CVE found for $PRODUCT',
+        body: `Dear $CUSTOMER,
+
+We have detected a new critical vulnerability affecting your monitored product: $PRODUCT
+
+CVE Details:
+- CVE ID: $CVE_ID
+- Severity: $SEVERITY
+- Description: $DESCRIPTION
+- CVSS Score: $CVSS_SCORE
+
+Please review this vulnerability and take appropriate action to secure your systems.
+
+Best regards,
+CVEAdvisor Security Team`
+      };
+
+      const { data, error } = await supabase.functions.invoke('sync-nvd', {
+        body: {
+          nvdApiKey: settings.apiKey,
+          emailSettings,
+          emailTemplate
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
       toast({
         title: "Sync Complete",
-        description: "NVD vulnerability database has been updated successfully.",
+        description: `Successfully processed ${data.processed || 0} vulnerabilities. Found ${data.newVulnerabilities || 0} new vulnerabilities.`,
       });
     } catch (error) {
       console.error("Failed to sync NVD data:", error);
       toast({
         title: "Sync Failed",
-        description: "Failed to sync with NVD. Please check your API key and try again.",
+        description: error.message || "Failed to sync with NVD. Please check your API key and try again.",
         variant: "destructive",
       });
     } finally {
