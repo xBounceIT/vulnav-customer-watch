@@ -1,5 +1,5 @@
 
-import { Users, Package, Settings, Shield } from "lucide-react";
+import { Users, Package, Settings, Shield, AlertTriangle } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -25,6 +25,11 @@ const menuItems = [
     icon: Package,
   },
   {
+    title: "Vulnerabilities",
+    url: "/vulnerabilities",
+    icon: AlertTriangle,
+  },
+  {
     title: "Admin",
     url: "/admin",
     icon: Settings,
@@ -39,7 +44,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-6 border-b border-gray-800">
         <div className="flex items-center gap-2">
           <Shield className="h-8 w-8 text-blue-500" />
-          <span className="text-xl font-bold text-white">CVEAdvisor</span>
+          <span className="text-xl font-bold text-blue-600">CVEAdvisor</span>
         </div>
         <p className="text-sm text-gray-400 mt-1">Security Monitoring Platform</p>
       </SidebarHeader>

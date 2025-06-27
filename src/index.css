@@ -102,13 +102,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-/* Fix for CVEAdvisor title visibility */
-.sidebar-trigger + * [data-sidebar="sidebar"] .sidebar-header {
-  color: #1e40af !important; /* Dark blue color */
-}
-
-/* Alternative approach - targeting the sidebar brand text directly */
-[data-sidebar="sidebar"] .font-semibold {
-  color: #1e40af !important; /* Dark blue color matching the hamburger menu */
-}
