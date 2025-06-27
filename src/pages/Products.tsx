@@ -85,8 +85,9 @@ const Products = () => {
       return;
     }
 
+    const nextId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
     const product: Product = {
-      id: Math.max(...products.map(p => p.id)) + 1,
+      id: nextId,
       vendor: newProduct.vendor,
       productName: newProduct.productName,
       enabled: true,

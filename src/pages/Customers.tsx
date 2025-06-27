@@ -81,8 +81,9 @@ const Customers = () => {
       return;
     }
 
+    const nextId = customers.length ? Math.max(...customers.map(c => c.id)) + 1 : 1;
     const customer: Customer = {
-      id: Math.max(...customers.map(c => c.id)) + 1,
+      id: nextId,
       companyName: newCustomer.companyName,
       email: newCustomer.email,
       products: newCustomer.products,
