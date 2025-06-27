@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, AlertTriangle, Calendar, ExternalLink, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,7 +37,7 @@ const Vulnerabilities = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   // Fetch vulnerabilities from database
-  const fetchVulnerabilities = async () => {
+  const fetchVulnerabilities = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('vulnerabilities')
@@ -67,12 +67,12 @@ const Vulnerabilities = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   // Initial load
   useEffect(() => {
     fetchVulnerabilities();
-  }, []);
+  }, [fetchVulnerabilities]);
 
   // Handle search
   const handleSearch = () => {
