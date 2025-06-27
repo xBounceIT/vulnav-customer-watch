@@ -1,5 +1,5 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,6 +35,38 @@ interface NVDVulnerability {
       }>
     }>;
   };
+}
+
+interface ProcessedVulnerability {
+  cveId: string;
+  vendor: string;
+  product: string;
+  severity: string;
+  cvssScore: number | null;
+  description: string;
+}
+
+interface EmailSettings {
+  authMethod: string;
+  fromEmail?: string;
+  fromName?: string;
+  smtpHost?: string;
+  smtpPort?: string;
+  smtpUser?: string;
+  smtpPassword?: string;
+  smtpProtocol?: string;
+}
+
+interface EmailTemplate {
+  subject: string;
+  body: string;
+}
+
+interface Customer {
+  id: string;
+  company_name: string;
+  email: string;
+  monitored_products: Array<{ product_name: string; vendor_name: string }>;
 }
 
 Deno.serve(async (req) => {
@@ -87,7 +119,7 @@ Deno.serve(async (req) => {
     console.log(`Fetched ${nvdData.vulnerabilities?.length || 0} vulnerabilities from NVD`);
 
     let processedCount = 0;
-    let newVulnerabilities = [];
+    const newVulnerabilities: ProcessedVulnerability[] = [];
 
     // Process each vulnerability
     for (const vuln of nvdData.vulnerabilities || []) {
@@ -183,7 +215,12 @@ Deno.serve(async (req) => {
   }
 });
 
-async function sendEmailNotifications(supabase: any, vulnerabilities: any[], emailSettings: any, emailTemplate: any) {
+async function sendEmailNotifications(
+  supabase: SupabaseClient,
+  vulnerabilities: ProcessedVulnerability[],
+  emailSettings: EmailSettings,
+  emailTemplate: EmailTemplate,
+) {
   try {
     console.log('Starting email notifications...');
     
@@ -203,8 +240,8 @@ async function sendEmailNotifications(supabase: any, vulnerabilities: any[], ema
     console.log(`Found ${customers?.length || 0} customers`);
 
     for (const customer of customers || []) {
-      const relevantVulns = vulnerabilities.filter(vuln => 
-        customer.monitored_products.some((product: any) => 
+      const relevantVulns = vulnerabilities.filter(vuln =>
+        customer.monitored_products.some(product =>
           vuln.product.toLowerCase().includes(product.product_name.toLowerCase()) ||
           vuln.vendor.toLowerCase().includes(product.vendor_name.toLowerCase())
         )
@@ -241,7 +278,12 @@ async function sendEmailNotifications(supabase: any, vulnerabilities: any[], ema
   }
 }
 
-async function sendEmail(customer: any, vulnerability: any, emailSettings: any, emailTemplate: any) {
+async function sendEmail(
+  customer: Customer,
+  vulnerability: ProcessedVulnerability,
+  emailSettings: EmailSettings,
+  emailTemplate: EmailTemplate,
+) {
   try {
     console.log(`Attempting to send email to ${customer.email} for ${vulnerability.cveId}`);
     
