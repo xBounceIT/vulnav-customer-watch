@@ -19,7 +19,7 @@ services:
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
     volumes:
       - ./supabase/functions:/home/deno/functions
-    command: start --main-service /home/deno/functions --binding 0.0.0.0:9000
+    command: start --main-service /home/deno/functions -i 0.0.0.0 -p 9000
     depends_on:
       - supabase
     ports:
