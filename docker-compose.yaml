@@ -1,12 +1,14 @@
 services:
   supabase:
     image: supabase/postgres:17.4.1.049
+    container_name: supabase-postgres
     env_file:
       - .env
     volumes:
       - supabase-data:/var/lib/postgresql/data
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
   app:
+    container_name: web
     build: .
     ports:
       - "8080:8080"
