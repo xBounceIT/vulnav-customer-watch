@@ -191,22 +191,12 @@ export const EmailSettings = ({
                 />
               </div>
               <div>
-                <Label htmlFor="smtp-port">SMTP Port *</Label>
-                <Input
-                  id="smtp-port"
-                  value={settings.smtpPort}
-                  onChange={(e) => onSettingsChange({...settings, smtpPort: e.target.value})}
-                  placeholder="587"
-                  required
-                />
-              </div>
-              <div>
                 <Label htmlFor="smtp-protocol">Protocol</Label>
-                <Select 
-                  value={settings.smtpProtocol} 
-                  onValueChange={(value) => onSettingsChange({...settings, smtpProtocol: value})}
+                <Select
+                  value={settings.smtpProtocol}
+                  onValueChange={(value) => onSettingsChange({ ...settings, smtpProtocol: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-24">
                     <SelectValue placeholder="Select protocol" />
                   </SelectTrigger>
                   <SelectContent>
@@ -214,6 +204,18 @@ export const EmailSettings = ({
                     <SelectItem value="SSL">SSL</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label htmlFor="smtp-port">SMTP Port *</Label>
+                <Input
+                  id="smtp-port"
+                  value={settings.smtpPort}
+                  onChange={(e) =>
+                    onSettingsChange({ ...settings, smtpPort: e.target.value })
+                  }
+                  placeholder="587"
+                  required
+                />
               </div>
               <div>
                 <Label htmlFor="smtp-user">SMTP Username *</Label>
