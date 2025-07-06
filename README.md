@@ -29,17 +29,3 @@ docker compose up --build -d
 ```
 
 The application will be reachable at [http://localhost:8080](http://localhost:8080).
-
-## Supabase Edge Functions
-
-The Docker Compose stack now starts the Supabase Edge Runtime alongside the
-database and frontend containers. Copy `.env.example` to `.env` and fill in your
-Supabase credentials, including the service role key required by the Edge
-Functions. Then run:
-
-```sh
-docker compose up --build
-```
-
-Once all containers are running you can sync the NVD database or send emails via
-the UI.
