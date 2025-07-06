@@ -1,12 +1,11 @@
-version: "3.8"
-services:
+ervices:
   supabase:
-    image: supabase/postgres:15
+    image: supabase/postgres:17.4.1.049
     env_file:
       - .env
     volumes:
       - supabase-data:/var/lib/postgresql/data
-
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
   app:
     build: .
     ports:
