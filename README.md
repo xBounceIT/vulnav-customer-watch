@@ -22,7 +22,12 @@ cd vulnav-customer-watch
 # Step 3: Install the necessary dependencies.
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Step 4: Start Supabase locally. The app expects a running Supabase instance
+# so you need to start it before launching the dev server. You can use Docker
+# Compose (included in this repo) or the Supabase CLI.
+docker compose up supabase   # or: npx supabase start
+
+# Step 5: Start the development server with auto-reloading and an instant preview.
 npm run dev
 ```
 
