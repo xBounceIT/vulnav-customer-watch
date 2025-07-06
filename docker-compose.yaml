@@ -1,6 +1,20 @@
 version: "3.8"
 services:
+  supabase:
+    image: supabase/postgres:15
+    env_file:
+      - .env
+    volumes:
+      - supabase-data:/var/lib/postgresql/data
+
   app:
     build: .
     ports:
       - "8080:8080"
+    env_file:
+      - .env
+    depends_on:
+      - supabase
+
+volumes:
+  supabase-data:

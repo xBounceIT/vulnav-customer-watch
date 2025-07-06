@@ -1,4 +1,4 @@
-# Customer Watch
+# Welcome to your project
 
 ## How can I edit this code?
 
@@ -50,7 +50,16 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Running with Docker Compose
+
+1. Copy `.env.example` to `.env` and adjust the Supabase credentials if needed.
+2. Start the stack:
+
+```sh
+docker compose up --build
+```
+
+The app will be available on `http://localhost:8080`.
 
 You can deploy the application using Docker Compose:
 
@@ -60,3 +69,4 @@ docker compose up --build -d
 ```
 
 The application will be reachable at [http://localhost:8080](http://localhost:8080).
+
