@@ -184,8 +184,11 @@ export const EmailSettings = ({
                 <Label htmlFor="smtp-host">SMTP Host *</Label>
                 <Input
                   id="smtp-host"
+                  className="w-64"
                   value={settings.smtpHost}
-                  onChange={(e) => onSettingsChange({...settings, smtpHost: e.target.value})}
+                  onChange={(e) =>
+                    onSettingsChange({ ...settings, smtpHost: e.target.value })
+                  }
                   placeholder="smtp.gmail.com"
                   required
                 />
@@ -209,6 +212,8 @@ export const EmailSettings = ({
                 <Label htmlFor="smtp-port">SMTP Port *</Label>
                 <Input
                   id="smtp-port"
+                  type="number"
+                  className="w-24"
                   value={settings.smtpPort}
                   onChange={(e) =>
                     onSettingsChange({ ...settings, smtpPort: e.target.value })
@@ -221,8 +226,12 @@ export const EmailSettings = ({
                 <Label htmlFor="smtp-user">SMTP Username *</Label>
                 <Input
                   id="smtp-user"
+                  type="email"
+                  className="w-64"
                   value={settings.smtpUser}
-                  onChange={(e) => onSettingsChange({...settings, smtpUser: e.target.value})}
+                  onChange={(e) =>
+                    onSettingsChange({ ...settings, smtpUser: e.target.value })
+                  }
                   placeholder="your-email@company.com"
                   required
                 />
@@ -232,8 +241,11 @@ export const EmailSettings = ({
                 <Input
                   id="smtp-password"
                   type="password"
+                  className="w-64"
                   value={settings.smtpPassword}
-                  onChange={(e) => onSettingsChange({...settings, smtpPassword: e.target.value})}
+                  onChange={(e) =>
+                    onSettingsChange({ ...settings, smtpPassword: e.target.value })
+                  }
                   placeholder="Your email password or app password"
                   required
                 />
@@ -248,8 +260,11 @@ export const EmailSettings = ({
                 <Label htmlFor="client-id">Client ID</Label>
                 <Input
                   id="client-id"
+                  className="w-72"
                   value={settings.clientId}
-                  onChange={(e) => onSettingsChange({...settings, clientId: e.target.value})}
+                  onChange={(e) =>
+                    onSettingsChange({ ...settings, clientId: e.target.value })
+                  }
                   placeholder="OAuth2 Client ID"
                 />
               </div>
@@ -258,8 +273,11 @@ export const EmailSettings = ({
                 <Input
                   id="client-secret"
                   type="password"
+                  className="w-72"
                   value={settings.clientSecret}
-                  onChange={(e) => onSettingsChange({...settings, clientSecret: e.target.value})}
+                  onChange={(e) =>
+                    onSettingsChange({ ...settings, clientSecret: e.target.value })
+                  }
                   placeholder="OAuth2 Client Secret"
                 />
               </div>
@@ -268,8 +286,11 @@ export const EmailSettings = ({
                   <Label htmlFor="tenant-id">Tenant ID</Label>
                   <Input
                     id="tenant-id"
+                    className="w-64"
                     value={settings.tenantId}
-                    onChange={(e) => onSettingsChange({...settings, tenantId: e.target.value})}
+                    onChange={(e) =>
+                      onSettingsChange({ ...settings, tenantId: e.target.value })
+                    }
                     placeholder="Microsoft Tenant ID"
                   />
                 </div>
@@ -281,8 +302,11 @@ export const EmailSettings = ({
             <Input
               id="from-email"
               type="email"
+              className="w-64"
               value={settings.fromEmail}
-              onChange={(e) => onSettingsChange({...settings, fromEmail: e.target.value})}
+              onChange={(e) =>
+                onSettingsChange({ ...settings, fromEmail: e.target.value })
+              }
               placeholder="alerts@company.com"
               required
             />
@@ -291,8 +315,11 @@ export const EmailSettings = ({
             <Label htmlFor="from-name">From Name</Label>
             <Input
               id="from-name"
+              className="w-48"
               value={settings.fromName}
-              onChange={(e) => onSettingsChange({...settings, fromName: e.target.value})}
+              onChange={(e) =>
+                onSettingsChange({ ...settings, fromName: e.target.value })
+              }
               placeholder="CVEAdvisor"
             />
           </div>
@@ -303,6 +330,7 @@ export const EmailSettings = ({
           <Input
             id="test-email-recipient"
             type="email"
+            className="w-64"
             value={testEmailRecipient}
             onChange={(e) => onTestEmailRecipientChange(e.target.value)}
             placeholder="test@example.com"
