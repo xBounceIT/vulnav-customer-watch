@@ -8,24 +8,26 @@ import { Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+interface Settings {
+  smtpHost: string;
+  smtpPort: string;
+  smtpProtocol: string;
+  smtpUser: string;
+  smtpPassword: string;
+  fromEmail: string;
+  fromName: string;
+  clientId: string;
+  clientSecret: string;
+  tenantId: string;
+  provider: string;
+}
+
 interface EmailSettingsProps {
   authMethod: string;
-  settings: {
-    smtpHost: string;
-    smtpPort: string;
-    smtpProtocol: string;
-    smtpUser: string;
-    smtpPassword: string;
-    fromEmail: string;
-    fromName: string;
-    clientId: string;
-    clientSecret: string;
-    tenantId: string;
-    provider: string;
-  };
+  settings: Settings;
   testEmailRecipient: string;
   onAuthMethodChange: (method: string) => void;
-  onSettingsChange: (settings: any) => void;
+  onSettingsChange: (settings: Settings) => void;
   onTestEmailRecipientChange: (email: string) => void;
 }
 

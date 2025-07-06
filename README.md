@@ -4,7 +4,6 @@
 
 There are several ways of editing your application.
 
-
 **Use your preferred IDE**
 
 If you want to work locally using your own IDE, you can clone this repo and push changes.
@@ -62,4 +61,12 @@ docker compose up --build
 
 The app will be available on `http://localhost:8080`.
 
+You can deploy the application using Docker Compose:
+
+```sh
+# Build the Docker image and start the container in the background
+docker compose up --build -d
+```
+
+The application will be reachable at [http://localhost:8080](http://localhost:8080).
 
