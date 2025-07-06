@@ -6,14 +6,33 @@ services:
     volumes:
       - supabase-data:/var/lib/postgresql/data
     command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  edge-runtime:
+    image: supabase/edge-runtime:v1
+    env_file:
+      - .env
+    environment:
+      SUPABASE_URL: http://supabase:54321
+      SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+    volumes:
+      - ./supabase/functions:/home/deno/functions
+    command: start --main-service /home/deno/functions --binding 0.0.0.0:9000
+    depends_on:
+      - supabase
+    ports:
+      - "54321:9000"
   app:
     build: .
     ports:
       - "8080:8080"
     env_file:
       - .env
+    environment:
+      VITE_SUPABASE_URL: http://edge-runtime:9000
     depends_on:
       - supabase
+      - edge-runtime
 
 volumes:
   supabase-data:

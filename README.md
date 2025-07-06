@@ -30,21 +30,17 @@ docker compose up --build -d
 
 The application will be reachable at [http://localhost:8080](http://localhost:8080).
 
-## Running Supabase with Edge Functions
+## Supabase Edge Functions
 
-The provided `docker-compose.yaml` only starts the Postgres database alongside the
-frontend container. Features such as syncing the NVD database and sending emails
-require Supabase Edge Functions. To run them locally you need the Supabase CLI
-which spins up an additional edge runtime container.
-
-1. Install the Supabase CLI from <https://supabase.com/docs/guides/cli>.
-2. Start the full local stack:
+The Docker Compose stack now starts the Supabase Edge Runtime alongside the
+database and frontend containers. Copy `.env.example` to `.env` and fill in your
+Supabase credentials, including the service role key required by the Edge
+Functions. Then run:
 
 ```sh
-supabase start
+docker compose up --build
 ```
 
-Use the same credentials as in your `.env` file when prompted. Once the stack is
-running, the edge functions will be available and the "Sync" actions in the UI
-should succeed.
+Once all containers are running you can sync the NVD database or send emails via
+the UI.
 
